@@ -19,7 +19,7 @@ function hasNameSpaces(nameSpaces) {
  * @param {Array} nameSpaces - An array of protobuf namespaces we want to decode
  */
 function createProtobufReadHandler(nameSpaces) {
-  nameSpaceMap = {}
+  var nameSpaceMap = {}
   nameSpaces.forEach(function(nameSpace) {
     nameSpaceMap[nameSpace.$type.name] = nameSpace;
   });
