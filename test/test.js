@@ -3,8 +3,15 @@ var chai = require('chai');
 chai.use(require('chai-immutable'));
 var expect = chai.expect;
 var Immutable = require('immutable');
+var Protobuf = require('protobufjs');
 
 var transit = require('../');
+var builder = Protobuf.loadProtoFile('./test/sample.proto');
+
+function buildProto(className, parameters) {
+    var _builder = builder.build(className);
+    return new _builder(parameters);
+}
 
 var samples = Immutable.Map({
 
@@ -35,6 +42,27 @@ var samples = Immutable.Map({
       .set(2, 'a')
       .set(3, 'b')
       .set(1, 'c')
+
+  }),
+
+  "Protobuf": Immutable.Map({
+
+    "Single Message": buildProto('test.messages.Item', {id: 4, key: 'some key', value: 'some value'}),
+    "Nested Message": buildProto(
+      'test.messages.Address',
+      {
+        id: 3,
+        street: 'some street',
+        city: 'some city',
+        type: 1,
+        member_ids: [1, 2, 3],
+        items: [
+          buildProto('test.messages.Item', {id: 2, key: 'other key'}),
+          buildProto('test.messages.Item', {id: 4})
+        ]
+      }
+    ),
+    "Array of Messages": [buildProto('test.messages.Item', {id: 1}), buildProto('test.messages.Item', {id: 2})]
 
   }),
 
@@ -96,6 +124,29 @@ describe('transit', function() {
         expect(roundTrip).to.eql(data);
       });
     });
+  });
+
+  samples.get('Protobuf').forEach(function(data, desc) {
+    // when we load the protobuf from JSON the $type is included
+    var nameSpace = builder.build('test');
+    nameSpace['$type'] = builder.lookup('test');
+    var nameSpaces = transit.withNameSpaces([nameSpace]);
+    describe(desc, function() {
+      it('should encode to JSON', function() {
+        var json = nameSpaces.toJSON(data);
+        expect(json).to.be.a('string');
+        expect(JSON.parse(json)).to.not.eql(null);
+      });
+      it('should round-trip', function() {
+        var roundTrip = nameSpaces.fromJSON(nameSpaces.toJSON(data));
+        expect(roundTrip).to.eql(data);
+      });
+    });
+  });
+
+  it('should ignore parsing protobufs if no nameSpaces are registered', function() {
+    var message = buildProto('test.messages.Item', {id: 3});
+    expect(transit.toJSON.bind(transit, message)).to.throw();
   });
 
   it('should ignore functions', function() {

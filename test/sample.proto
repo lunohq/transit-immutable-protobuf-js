@@ -1,0 +1,23 @@
+syntax = "proto3";
+package test.messages;
+
+message Address {
+    enum AddressType {
+        HOME = 1;
+        BUSINESS = 2;
+    }
+
+    uint32 id = 1;
+    string street = 2;
+    string city = 3;
+    string state = 4;
+    AddressType type = 5;
+    repeated uint32 member_ids = 6;
+    repeated Item items = 7;
+}
+
+message Item {
+    uint32 id = 1;
+    string key = 2;
+    string value = 3;
+}
