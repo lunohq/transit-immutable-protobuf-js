@@ -1,6 +1,5 @@
 var transit = require('transit-js');
 var Immutable = require('immutable');
-var Protobuf = require('protobufjs');
 
 function hasNameSpaces(nameSpaces) {
   if (
@@ -86,7 +85,12 @@ function createReader(nameSpaces) {
   });
 };
 
-function createWriter(predicate, nameSpaces) {
+/**
+ * Create a writer that can optionally serialize protobuf objects.
+ * @param {Function} predicate - a filter function you want to use to ignore values
+ * @param {Array} protoConstructor - the optional protobuf constructor you want to support serializing
+ */
+function createWriter(predicate, protoConstructor) {
   var handlers = transit.map([
     Immutable.Map, transit.makeWriteHandler({
       tag: function() {
@@ -163,9 +167,9 @@ function createWriter(predicate, nameSpaces) {
     })
   ]);
 
-  if (hasNameSpaces(nameSpaces)) {
+  if (typeof protoConstructor === 'function') {
     handlers.set(
-      new Protobuf.Builder.Message().constructor,
+      protoConstructor,
       transit.makeWriteHandler({
         tag: function() {
           return "PB";
@@ -207,10 +211,13 @@ exports.withFilter = withFilter;
 /**
  * Register protobuf nameSpaces with the transit write and read handlers.
  * @param {Array} nameSpaces - an array of protobuf nameSpaces we want to decode
+ * @param {Function} constructor - the protobuf constructor you want to
+ *  register. Protobufjs dynamically creates constructors for messages, so we
+ *  can't use some base message type.
  */
-function withNameSpaces(nameSpaces) {
+function withNameSpaces(nameSpaces, constructor) {
   var reader = createReader(nameSpaces);
-  var writer = createWriter(undefined, nameSpaces);
+  var writer = createWriter(undefined, constructor);
   return {
     toJSON: function(data) {
       return writer.write(data);

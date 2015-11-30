@@ -130,7 +130,7 @@ describe('transit', function() {
     // when we load the protobuf from JSON the $type is included
     var nameSpace = builder.build('test');
     nameSpace['$type'] = builder.lookup('test');
-    var nameSpaces = transit.withNameSpaces([nameSpace]);
+    var nameSpaces = transit.withNameSpaces([nameSpace], new Protobuf.Builder.Message().constructor);
     describe(desc, function() {
       it('should encode to JSON', function() {
         var json = nameSpaces.toJSON(data);
